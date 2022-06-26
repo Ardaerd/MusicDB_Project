@@ -1,5 +1,6 @@
 package com.example.music_project;
 
+import com.example.music_project.model.Albums;
 import com.example.music_project.model.Artists;
 import com.example.music_project.model.Datasource;
 import javafx.collections.FXCollections;
@@ -10,11 +11,33 @@ import javafx.scene.control.TableView;
 
 public class Controller {
     @FXML
-    public TableView<Artists> artistTable;
+    public TableView artistTable;
 
     public void listArtists() {
         Task<ObservableList<Artists>> task = new GetAllArtistsTask();
         artistTable.itemsProperty().bind(task.valueProperty());
+
+        new Thread(task).start();
+    }
+
+    @FXML
+    public void listAlbumsForArtist() {
+        final Artists artist = (Artists) artistTable.getSelectionModel().getSelectedItem();
+
+        if (artist == null) {
+            System.out.println("No artist is selected");
+            return;
+        }
+
+        Task<ObservableList<Albums>> task = new Task<ObservableList<Albums>>() {
+            @Override
+            protected ObservableList<Albums> call() throws Exception {
+                return FXCollections.observableArrayList
+                        (Datasource.getInstance().queryAlbumForArtistId(artist.getId()));
+            }
+        };
+        artistTable.itemsProperty().bind(task.valueProperty());
+
         new Thread(task).start();
     }
 }

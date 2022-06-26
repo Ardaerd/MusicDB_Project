@@ -112,6 +112,7 @@ public class Datasource {
     private PreparedStatement queryArtists;
     private PreparedStatement queryAlbums;
 
+    private PreparedStatement queryAlbumsByArtistId;
     private PreparedStatement insertIntoArtists;
     private PreparedStatement insertIntoAlbums;
     private PreparedStatement insertIntoSongs;
@@ -137,6 +138,7 @@ public class Datasource {
             insertIntoSongs = conn.prepareStatement(INSERT_SONGS);
             queryArtists = conn.prepareStatement(QUERY_ARTIST);
             queryAlbums = conn.prepareStatement(QUERY_ALBUM);
+            queryAlbumsByArtistId = conn.prepareStatement(QUERY_ALBUMS_BY_ARTIST_ID);
             return true;
         } catch (SQLException e) {
             System.out.println("Couldn't connect to database : " + e.getMessage());
@@ -164,6 +166,9 @@ public class Datasource {
 
             if (queryAlbums != null)
                 queryAlbums.close();
+
+            if (queryAlbumsByArtistId != null)
+                queryAlbumsByArtistId.close();
 
             if (conn != null) {
                 conn.close();
@@ -354,6 +359,28 @@ public class Datasource {
                 System.out.println("ID: " + song.getId() + " | Track: " + song.getTrack() + " | Title: " + song.getTitle() + " | " + song.getAlbum());
         }
 
+    }
+
+    public List<Albums> queryAlbumForArtistId(int id) {
+        try {
+            queryAlbumsByArtistId.setInt(1,id);
+            ResultSet results = queryAlbumsByArtistId.executeQuery();
+
+            List<Albums> albums = new ArrayList<>();
+            while (results.next()) {
+                Albums album = new Albums();
+                album.setId(results.getInt(1));
+                album.setName(results.getString(2));
+                album.setArtistId(results.getInt(3));
+                albums.add(album);
+            }
+
+            return albums;
+
+        } catch (SQLException e) {
+            System.out.println("Query failed: " + e.getMessage());
+            return null;
+        }
     }
 
     public List<String> queryAlbumsForArtist(String artistName,int sortOrder) {
