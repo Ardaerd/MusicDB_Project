@@ -10,7 +10,9 @@ module com.example.music_project {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
+    requires java.sql;
 
     opens com.example.music_project to javafx.fxml;
+    opens com.example.music_project.model;
     exports com.example.music_project;
 }
