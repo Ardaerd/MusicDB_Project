@@ -66,9 +66,9 @@ public class Datasource {
     // INNER JOIN artists ON  albums.artist = artists._id
     //ORDER BY artists.name, albums.name, songs.track
     public static final String CREATE_ARTIST_FOR_SONG_VIEW = "CREATE VIEW IF NOT EXISTS " +
-            TABLE_ARTIST_SONG_VIEW + " AS SELECT " + TABLE_ARTISTS + "." + COLUMN_ARTISTS_NAME + "," +
+            TABLE_ARTIST_SONG_VIEW + " AS SELECT " + TABLE_ARTISTS + "." + COLUMN_ARTISTS_NAME + " AS " + COLUMN_ARTISTS_NAME + "," +
             TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + " AS " + COLUMN_SONG_ALBUM + "," +
-            TABLE_SONGS + "." + COLUMN_SONG_TRACK + "," + TABLE_SONGS + "." + COLUMN_SONG_TITLE +
+            TABLE_SONGS + "." + COLUMN_SONG_TRACK + "," + TABLE_SONGS + "." + COLUMN_SONG_TITLE + " AS " + COLUMN_SONG_TITLE +
             " FROM " + TABLE_SONGS +
             " INNER JOIN " + TABLE_ALBUMS + " ON " + TABLE_SONGS + "." + COLUMN_SONG_ALBUM + " = " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ID +
             " INNER JOIN " + TABLE_ARTISTS + " ON " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ARTIST + " = " + TABLE_ARTISTS + "." + COLUMN_ARTISTS_ID +
@@ -80,10 +80,16 @@ public class Datasource {
             COLUMN_SONG_ALBUM + "," + COLUMN_SONG_TRACK + " FROM " + TABLE_ARTIST_SONG_VIEW +
             " WHERE " + COLUMN_SONG_TITLE + " = \"";
 
-    // SELECT name, album, track FROM artist_list WHERE title = ?;
+    // SELECT title FROM artist_list WHERE name = ?;
     public static final String QUERY_VIEW_SONG_INFO_PREP = "SELECT " + COLUMN_ARTISTS_NAME + "," +
             COLUMN_SONG_ALBUM + "," + COLUMN_SONG_TRACK + " FROM " + TABLE_ARTIST_SONG_VIEW +
             " WHERE " + COLUMN_SONG_TITLE + " = ?";
+
+    // SELECT title FROM artist_list WHERE title = ?;
+    public static final String QUERY_VIEW_SONG_FOR_ARTIST = "SELECT *" +
+            " FROM " + TABLE_ARTIST_SONG_VIEW +
+            " WHERE " + COLUMN_ARTISTS_NAME + " = ?";
+
 
     public static final String QUERY_ARTIST = "SELECT " + COLUMN_ARTISTS_ID + " " +
             "FROM " + TABLE_ARTISTS + " WHERE " + COLUMN_ARTISTS_NAME + " = ?";
@@ -116,6 +122,7 @@ public class Datasource {
     private PreparedStatement queryAlbums;
 
     private PreparedStatement queryAlbumsByArtistId;
+    private PreparedStatement queryViewSongForArtist;
     private PreparedStatement insertIntoArtists;
     private PreparedStatement insertIntoAlbums;
     private PreparedStatement insertIntoSongs;
@@ -137,11 +144,13 @@ public class Datasource {
         try {
             conn = DriverManager.getConnection(CONNECTION_STRING);
 //            querySongInfoView = conn.prepareStatement(QUERY_VIEW_SONG_INFO_PREP);
+            createViewForSongArtists();
             insertIntoArtists = conn.prepareStatement(INSERT_ARTIST,Statement.RETURN_GENERATED_KEYS);
             insertIntoAlbums = conn.prepareStatement(INSERT_ALBUMS,Statement.RETURN_GENERATED_KEYS);
             insertIntoSongs = conn.prepareStatement(INSERT_SONGS);
             queryArtists = conn.prepareStatement(QUERY_ARTIST);
             queryAlbums = conn.prepareStatement(QUERY_ALBUM);
+            queryViewSongForArtist = conn.prepareStatement(QUERY_VIEW_SONG_FOR_ARTIST);
             queryAlbumsByArtistId = conn.prepareStatement(QUERY_ALBUMS_BY_ARTIST_ID);
             updateArtistName = conn.prepareStatement(UPDATE_ARTIST_NAME);
             return true;
@@ -177,6 +186,9 @@ public class Datasource {
 
             if (updateArtistName != null)
                 updateArtistName.close();
+
+            if (queryViewSongForArtist != null)
+                queryViewSongForArtist.close();
 
             if (conn != null) {
                 conn.close();
@@ -551,6 +563,30 @@ public class Datasource {
         }
     }
 
+   public List<ArtistList> queryViewSonfForArtist(String name) {
+        try {
+            queryViewSongForArtist.setString(1,name);
+            ResultSet results = queryViewSongForArtist.executeQuery();
+
+            List<ArtistList> artistLists = new ArrayList<>();
+
+            while (results.next()) {
+                ArtistList artistList = new ArtistList();
+                artistList.setArtistName(results.getString(1));
+                artistList.setAlbumName(results.getString(2));
+                artistList.setSongTrack(results.getInt(3));
+                artistList.setName(results.getString(4));
+                artistLists.add(artistList);
+            }
+
+            return artistLists;
+
+        } catch (SQLException e) {
+            System.out.println("Query failed: " + e.getMessage());
+            return null;
+        }
+   }
+
     public void printSongInfoView(String song) {
         List<SongArtist> songArtists = querySongInfoView(song);
 
@@ -564,21 +600,24 @@ public class Datasource {
     }
 
 
-    public void printColumns() {
+    public List<String> getColumns(String sql) {
 
         try (Statement statement = conn.createStatement();
-             ResultSet results = statement.executeQuery(QUERY_ARTIST_FOR_SONG_COLUMN)) {
+             ResultSet results = statement.executeQuery(sql)) {
+            List<String> columns_name = new ArrayList<>();
 
             ResultSetMetaData meta = results.getMetaData();
 
             int numColumns = meta.getColumnCount();
 
             for (int i = 1; i <= numColumns; i++) {
-                System.out.println(meta.getColumnName(i));
+                columns_name.add(meta.getColumnName(i));
             }
+            return columns_name;
 
         } catch (SQLException e) {
             System.out.println("Query is failed: " + e.getMessage());
+            return null;
         }
 
     }

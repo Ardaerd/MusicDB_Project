@@ -4,7 +4,7 @@ public class ArtistList {
     private String artistName;
     private String albumName;
     private int songTrack;
-    private String songTitle;
+    private String name;
 
     public String getArtistName() {
         return artistName;
@@ -30,11 +30,11 @@ public class ArtistList {
         this.songTrack = songTrack;
     }
 
-    public String getSongTitle() {
-        return songTitle;
+    public String getName() {
+        return name;
     }
 
-    public void setSongTitle(String songTitle) {
-        this.songTitle = songTitle;
+    public void setName(String name) {
+        this.name = name;
     }
 }

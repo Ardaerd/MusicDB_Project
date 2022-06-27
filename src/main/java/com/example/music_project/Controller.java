@@ -1,6 +1,7 @@
 package com.example.music_project;
 
 import com.example.music_project.model.Albums;
+import com.example.music_project.model.ArtistList;
 import com.example.music_project.model.Artists;
 import com.example.music_project.model.Datasource;
 import javafx.collections.FXCollections;
@@ -46,6 +47,7 @@ public class Controller {
                         (Datasource.getInstance().queryAlbumForArtistId(artist.getId()));
             }
         };
+
         artistTable.itemsProperty().bind(task.valueProperty());
 
         new Thread(task).start();
@@ -54,7 +56,7 @@ public class Controller {
     @FXML
     public void updateArtist() {
         final Artists artist = (Artists) artistTable.getItems().get(2);
-
+        artistTable.getColumns().add("Album");
         Task<Boolean> task = new Task<Boolean>() {
             @Override
             protected Boolean call() throws Exception {
@@ -68,6 +70,27 @@ public class Controller {
                 artistTable.refresh();
             }
         });
+        new Thread(task).start();
+    }
+
+    @FXML
+    public void listSong() {
+        final Artists artist = (Artists) artistTable.getSelectionModel().getSelectedItem();
+
+        if (artist == null) {
+            System.out.println("No artist is selected");
+            return;
+        }
+
+        Task<ObservableList<ArtistList>> task = new Task<>() {
+            @Override
+            protected ObservableList<ArtistList> call() throws Exception {
+                return FXCollections.observableArrayList
+                        (Datasource.getInstance().queryViewSonfForArtist(artist.getName()));
+            }
+        };
+        artistTable.itemsProperty().bind(task.valueProperty());
+
         new Thread(task).start();
     }
 }
