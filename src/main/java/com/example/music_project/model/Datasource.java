@@ -107,6 +107,9 @@ public class Datasource {
             "(" + COLUMN_SONG_TRACK + "," + COLUMN_SONG_TITLE + "," + COLUMN_SONG_ALBUM + ") " +
             "VALUES(?,?,?)";
 
+    public static final String UPDATE_ARTIST_NAME = "UPDATE " + TABLE_ARTISTS +
+            " SET " + COLUMN_ARTISTS_NAME + " = ? WHERE " + COLUMN_ARTISTS_ID + " = ?";
+
     private Connection conn;
     private PreparedStatement querySongInfoView;
     private PreparedStatement queryArtists;
@@ -117,6 +120,7 @@ public class Datasource {
     private PreparedStatement insertIntoAlbums;
     private PreparedStatement insertIntoSongs;
 
+    private PreparedStatement updateArtistName;
     private static Datasource instance = new Datasource();
 
     private Datasource() {
@@ -139,6 +143,7 @@ public class Datasource {
             queryArtists = conn.prepareStatement(QUERY_ARTIST);
             queryAlbums = conn.prepareStatement(QUERY_ALBUM);
             queryAlbumsByArtistId = conn.prepareStatement(QUERY_ALBUMS_BY_ARTIST_ID);
+            updateArtistName = conn.prepareStatement(UPDATE_ARTIST_NAME);
             return true;
         } catch (SQLException e) {
             System.out.println("Couldn't connect to database : " + e.getMessage());
@@ -170,11 +175,29 @@ public class Datasource {
             if (queryAlbumsByArtistId != null)
                 queryAlbumsByArtistId.close();
 
+            if (updateArtistName != null)
+                updateArtistName.close();
+
             if (conn != null) {
                 conn.close();
             }
         } catch (SQLException e) {
             System.out.println("Couldn't close connection: " + e.getMessage());
+        }
+    }
+
+    public boolean updateArtistName(int id, String newName) {
+        try {
+            updateArtistName.setString(1,newName);
+            updateArtistName.setInt(2,id);
+
+            int affectedRecords = updateArtistName.executeUpdate();
+
+            return affectedRecords == 1;
+
+        } catch (SQLException e) {
+            System.out.println("Update failed: " + e.getMessage());
+            return false;
         }
     }
 
